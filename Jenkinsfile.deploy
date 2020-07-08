@@ -158,27 +158,21 @@ pipeline {
         stage('Build and Test Images'){
             steps{
                 script {
-                    // build_stages = [:]
-                    // IMAGES.each{ image -> build_stages[image] = {
-                    //         initWorkspace(image)
-                    //         dir(getWorkspacePath(image)){
-                    //             try{
-                    //                 sh "make ${image} ignore_test=${params.SKIP_TESTS} cekit_option='--work-dir .'"
-                    //             }
-                    //             finally{
-                    //                 junit testResults: 'target/test/results/*.xml', allowEmptyResults: true
-                    //             }
+                    build_stages = [:]
+                    IMAGES.each{ image -> build_stages[image] = {
+                            initWorkspace(image)
+                            dir(getWorkspacePath(image)){
+                                try{
+                                    sh "make ${image} ignore_test=${params.SKIP_TESTS} cekit_option='--work-dir .'"
+                                }
+                                finally{
+                                    junit testResults: 'target/test/results/*.xml', allowEmptyResults: true
+                                }
                             
-                    //         }
-                    //     }
-                    // }
-                    // parallel build_stages
-                    try {
-                        sh "make kogito-quarkus-ubi8-s2i ignore_test=${params.SKIP_TESTS} cekit_option='--work-dir .'"
+                            }
+                        }
                     }
-                    finally{
-                        junit testResults: 'target/test/results/*.xml', allowEmptyResults: true
-                    }
+                    parallel build_stages
                 }
             }
         }
