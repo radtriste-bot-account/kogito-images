@@ -38,6 +38,7 @@ pipeline {
         string(name: 'IMAGE_TAG', defaultValue: '', description: 'Image tag to use to deploy images')
 
         string(name: 'MAVEN_ARTIFACT_REPOSITORY', defaultValue: '', description: 'Maven repository where the build artifacts are present')
+        string(name: 'VERSION', defaultValue: '', description: 'Version')
 
         booleanParam(name: 'SKIP_TESTS', defaultValue: false, description: 'Skip tests')
     }
@@ -72,6 +73,19 @@ pipeline {
                 }
             }
         }
+        stage('Update Version')
+        {
+            when {
+                expression{
+                    return params.VERSION != ''
+                }
+            }
+            steps {
+                script{
+                    sh "python3 scripts/manage-kogito-version.py --bump-to ${params.VERSION} --confirm"
+                }
+            }
+        }
         stage('Update Maven information') {
             steps {
                 script {
@@ -79,6 +93,9 @@ pipeline {
                     updateArtifactCmd = "python3 scripts/update-maven-information.py"
                     if(params.MAVEN_ARTIFACT_REPOSITORY != ''){
                         updateArtifactCmd += " --repo-url ${params.MAVEN_ARTIFACT_REPOSITORY}"
+                    }
+                    if(params.VERSION != ''){
+                        updateArtifactCmd += " --version ${params.VERSION}"
                     }
                     sh updateArtifactCmd
 
