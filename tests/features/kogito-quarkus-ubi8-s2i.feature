@@ -18,7 +18,7 @@ Feature: kogito-quarkus-ubi8-s2i image tests
     And file /home/kogito/bin/rules-quarkus-helloworld-runner should exist
     And file /home/kogito/ssl-libs/libsunec.so should exist
     And file /home/kogito/cacerts should exist
-    And s2i build log should contain -J-Xmx2576980377
+    And s2i build log should contain -J-Xmx4g
 
   Scenario: Verify if the s2i build is finished as expected using native build and no runtime image
     Given s2i build https://github.com/kiegroup/kogito-examples.git from rules-quarkus-helloworld using master
@@ -37,7 +37,7 @@ Feature: kogito-quarkus-ubi8-s2i image tests
     And file /home/kogito/bin/rules-quarkus-helloworld-runner should exist
     And file /home/kogito/ssl-libs/libsunec.so should exist
     And file /home/kogito/cacerts should exist
-    And s2i build log should contain -J-Xmx2576980377
+    And s2i build log should contain -J-Xmx4g
 
   Scenario: Verify if the s2i build is finished as expected with non native build and no runtime image
     Given s2i build https://github.com/kiegroup/kogito-examples.git from rules-quarkus-helloworld using master
@@ -113,13 +113,8 @@ Feature: kogito-quarkus-ubi8-s2i image tests
     Then file /home/kogito/bin/process-quarkus-example-runner.jar should exist
     And s2i build log should contain '/home/kogito/bin/demo.orders.proto' -> '/home/kogito/data/protobufs/demo.orders.proto'
     And s2i build log should contain '/home/kogito/bin/persons.proto' -> '/home/kogito/data/protobufs/persons.proto'
-    And s2i build log should contain ---> [persistence] generating md5 for persistence files
-    And run sh -c 'cat /home/kogito/data/protobufs/persons-md5.txt' in container and immediately check its output for b19f6d73a0a1fea0bfbd8e2e30701d78
-    And run sh -c 'cat /home/kogito/data/protobufs/demo.orders-md5.txt' in container and immediately check its output for 02b40df868ebda3acb3b318b6ebcc055
-    And s2i build log should contain [persistence] Generated checksum for /home/kogito/data/protobufs/persons.proto with the name: /home/kogito/data/protobufs/persons-md5.txt
-    And s2i build log should contain [persistence] Generated checksum for /home/kogito/data/protobufs/demo.orders.proto with the name: /home/kogito/data/protobufs/demo.orders-md5.txt
 
-  # ignore until https://issues.redhat.com/browse/KOGITO-2003 is not fixed.
+  #ignore until https://issues.redhat.com/browse/KOGITO-3638 is resolved
   @ignore
   Scenario: Verify if the s2i build is finished as expected performing a native build with persistence enabled
     Given s2i build https://github.com/kiegroup/kogito-examples.git from process-quarkus-example using master and runtime-image quay.io/kiegroup/kogito-quarkus-ubi8:latest
@@ -127,16 +122,11 @@ Feature: kogito-quarkus-ubi8-s2i image tests
       | NATIVE            | true          |
       | LIMIT_MEMORY      | 6442450944    |
       | MAVEN_ARGS_APPEND | -Ppersistence |
-    Then run sh -c 'cat /home/kogito/data/protobufs/persons-md5.txt' in container and immediately check its output for b19f6d73a0a1fea0bfbd8e2e30701d78
-    And run sh -c 'cat /home/kogito/data/protobufs/demo.orders-md5.txt' in container and immediately check its output for 02b40df868ebda3acb3b318b6ebcc055
-    And file /home/kogito/bin/process-quarkus-example-runner should exist
+    Then file /home/kogito/bin/process-quarkus-example-runner should exist
     And s2i build log should contain '/home/kogito/bin/demo.orders.proto' -> '/home/kogito/data/protobufs/demo.orders.proto'
     And s2i build log should contain '/home/kogito/bin/persons.proto' -> '/home/kogito/data/protobufs/persons.proto'
-    And s2i build log should contain ---> [persistence] generating md5 for persistence files
-    And s2i build log should contain [persistence] Generated checksum for /home/kogito/data/protobufs/persons.proto with the name: /home/kogito/data/protobufs/persons-md5.txt
-    And s2i build log should contain [persistence] Generated checksum for /home/kogito/data/protobufs/demo.orders.proto with the name: /home/kogito/data/protobufs/demo.orders-md5.txt
 
-  Scenario: Scenario: Verify if the multi-module s2i build is finished as expected performing a non native build
+  Scenario: Verify if the multi-module s2i build is finished as expected performing a non native build
     Given s2i build https://github.com/kiegroup/kogito-examples.git from . using master and runtime-image quay.io/kiegroup/kogito-quarkus-jvm-ubi8:latest
       | variable | value |
       | NATIVE            | false                            |
@@ -244,13 +234,13 @@ Feature: kogito-quarkus-ubi8-s2i image tests
     And run sh -c 'echo $MAVEN_VERSION' in container and immediately check its output for 3.6.2
     And run sh -c 'echo $JAVA_HOME' in container and immediately check its output for /usr/lib/jvm/java-11
     And run sh -c 'echo $GRAALVM_HOME' in container and immediately check its output for /usr/share/graalvm
-    And run sh -c 'echo $GRAALVM_VERSION' in container and immediately check its output for 19.3.1
+    And run sh -c 'echo $GRAALVM_VERSION' in container and immediately check its output for 20.2.0
 
   Scenario: Verify that the Kogito Maven archetype is generating the project and compiling it correctly
     Given s2i build /tmp/kogito-examples from dmn-example using master and runtime-image quay.io/kiegroup/kogito-quarkus-jvm-ubi8:latest
       | variable | value |
       | NATIVE         | false          |
-      | KOGITO_VERSION | 8.0.0-SNAPSHOT |
+      | KOGITO_VERSION | 2.0.0-SNAPSHOT |  
     Then file /home/kogito/bin/project-1.0-SNAPSHOT-runner.jar should exist
     And check that page is served
       | property        | value                                                                                            |
@@ -267,7 +257,7 @@ Feature: kogito-quarkus-ubi8-s2i image tests
       | variable | value |
       | NATIVE         | true           |
       | LIMIT_MEMORY   | 6442450944     |
-      | KOGITO_VERSION | 8.0.0-SNAPSHOT |
+      | KOGITO_VERSION | 2.0.0-SNAPSHOT |  
     Then file /home/kogito/bin/project-1.0-SNAPSHOT-runner should exist
     And check that page is served
       | property        | value                                                                                            |
@@ -283,7 +273,7 @@ Feature: kogito-quarkus-ubi8-s2i image tests
     Given s2i build /tmp/kogito-examples from dmn-example using master and runtime-image quay.io/kiegroup/kogito-quarkus-jvm-ubi8:latest
       | variable | value |
       | NATIVE              | false          |
-      | KOGITO_VERSION      | 8.0.0-SNAPSHOT |
+      | KOGITO_VERSION      | 2.0.0-SNAPSHOT |  
       | PROJECT_GROUP_ID    | com.mycompany  |
       | PROJECT_ARTIFACT_ID | myproject      |
       | PROJECT_VERSION     | 2.0-SNAPSHOT   |

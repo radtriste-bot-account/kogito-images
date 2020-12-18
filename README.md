@@ -51,9 +51,12 @@ Table of Contents
         - [Kogito Spring Boot Runtime Image usage](#kogito-spring-boot-runtime-image-usage)
         - [Kogito Spring Boot Runtime Image example](#kogito-spring-boot-runtime-image-example)
   - [Kogito Component Images](#kogito-component-images)
-    - [Kogito Data Index Component Image](#kogito-data-index-component-image)
+    - [Kogito Data Index Component Images](#kogito-data-index-component-images)
+    - [Kogito Trusty Component Image](#kogito-trusty-component-image)
+    - [Kogito Explainability Component Image](#kogito-explainability-component-image)
     - [Kogito Jobs Service Component Image](#kogito-jobs-service-component-image)
     - [Kogito Management Console Component Image](#kogito-management-console-component-image)
+    - [Kogito Trusty UI Component Image](#kogito-trusty-ui-component-image)
   - [Using Kogito Images to Deploy Apps on OpenShift](#using-kogito-images-to-deploy-apps-on-openshift)
     - [Using released images](#using-released-images)
     - [Pushing the built images to a local OCP registry:](#pushing-the-built-images-to-a-local-ocp-registry)
@@ -99,7 +102,7 @@ To interact with Kogito images, you would need to install the needed dependencie
 * Optional dependencies:
     * [source-to-image](https://github.com/openshift/source-to-image)
         * used to perform local s2i images using some of the [builder images](#builder-images)
-    * [GraalVM 19.3.1](https://github.com/graalvm/graalvm-ce-builds/releases/tag/vm-19.3.1) Java 11 or higher
+    * [GraalVM 20.2.0](https://github.com/graalvm/graalvm-ce-builds/releases/tag/vm-20.2.0) Java 11 or higher
         * Useful to test Kogito apps on native mode before create a Container image with it.
     * [OpenShift Cli](https://docs.openshift.com/container-platform/4.3/cli_reference/openshift_cli/getting-started-cli.html)
         
@@ -129,7 +132,7 @@ lightweight and fast applications ready to run in the Cloud.
 
 The Kogito Quarkus Builder Image is equipped with the following components:
 
- * GraalVM 19.3.1-java11
+ * GraalVM 20.2.0-java11
  * OpenJDK 11.0.6
  * Maven 3.6.2
  
@@ -170,7 +173,7 @@ $ s2i build https://github.com/kiegroup/kogito-examples.git \
 [INFO] ------------------------------------------------------------------------
 ---> Build finished, installing application from path /tmp/src
 ---> Installing jar file
-'target/rules-quarkus-helloworld-8.0.0-SNAPSHOT-runner.jar' -> '/home/kogito/bin/rules-quarkus-helloworld-8.0.0-SNAPSHOT-runner.jar'
+'target/rules-quarkus-helloworld-runner.jar' -> '/home/kogito/bin/rules-quarkus-helloworld-runner.jar'
 ---> Copying application libraries
 ---> [s2i-core] Copy image metadata file...
 '/tmp/src/target/image_metadata.json' -> '/tmp/.s2i/image_metadata.json'
@@ -422,7 +425,7 @@ Once you have checked out the example on your local machine follow the steps bel
 # build the example using uberjar reference
 $ mvn clean package -Dquarkus.package.uber-jar
 # inspect and run the generated uberjar, for instructions on how to use this example see its README file.
-$ java -jar target/jbpm-quarkus-example-8.0.0-SNAPSHOT-runner.jar 
+$ java -jar target/jbpm-quarkus-example-runner.jar 
 
 # performing a source to image build to copy the artifacts to the runtime image
 $ s2i build target/ quay.io/kiegroup/kogito-quarkus-jvm-ubi8:latest process-quarkus-example
@@ -492,11 +495,11 @@ s2i build target/ quay.io/kiegroup/kogito-quarkus-ubi8:latest binary-test-exampl
 -----> Cleaning up unneeded jar files
 ...
 ---> Installing application binaries
-'./process-quarkus-example-8.0.0-SNAPSHOT-runner' -> '/home/kogito/bin/process-quarkus-example-8.0.0-SNAPSHOT-runner'
+'./process-quarkus-example-runner' -> '/home/kogito/bin/process-quarkus-example-runner'
 ...
 
 # run the output image
-$ docker run -it -p 8080:8080 binary-test-example-3
+$ docker run -it -p 8080:8080 binary-test-example
 
 # on another terminal, interact with the kogito service
 $ curl -d '{"approver" : "john", "order" : {"orderNumber" : "12345", "shipped" : false}}' -H "Content-Type: application/json" -X POST http://localhost:8080/orders
@@ -564,33 +567,91 @@ The Kogito Component Images can be considered as lightweight images that will co
 by providing extra capabilities, like managing the processes on a web UI or providing persistence layer to the Kogito applications.
 Today we have 3 Kogito Component Images:
 
-* [quay.io/kiegroup/kogito-data-index](https://quay.io/kiegroup/kogito-data-index)
+* [quay.io/kiegroup/kogito-data-index-infinispan](https://quay.io/kiegroup/kogito-data-index-infinispan)
+* [quay.io/kiegroup/kogito-data-index-mongodb](https://quay.io/kiegroup/kogito-data-index-mongodb)
+* [quay.io/kiegroup/kogito-trusty](https://quay.io/kiegroup/kogito-trusty)
+* [quay.io/kiegroup/kogito-explainability](https://quay.io/kiegroup/kogito-explainability)
 * [quay.io/kiegroup/kogito-jobs-service](htps://quay.io/kiegroup/kogito-jobs-service)
 * [quay.io/kiegroup/kogito-management-console](https://quay.io/kiegroup/kogito-management-console)
+* [quay.io/kiegroup/kogito-trusty-ui](https://quay.io/kiegroup/kogito-trusty-ui)
 
 
-### Kogito Data Index Component Image
+### Kogito Data Index Component Images
 
 The Data Index Service aims at capturing and indexing data produced by one more Kogito runtime services. 
-For more information please visit this (link)(https://docs.jboss.org/kogito/release/latest/html_single/#proc_kogito-travel-agency-enable-data-index). 
-The Data Index Service depends on a running Infinispan Server.
+For more information please visit this (link)(https://docs.jboss.org/kogito/release/latest/html_single/#proc-kogito-travel-agency-enable-data-index_kogito-deploying-on-openshift). 
+The Data Index Service depends on a running Infinispan or MongoDB Server.
+The Persistence service can be switched by using its corresponding image
+
+- Infinispan: quay.io/kiegroup/kogito-data-index-infinispan
+    [image.yaml](kogito-data-index-infinispan-overrides.yaml)
+- Mongodb: quay.io/kiegroup/kogito-data-index-mongodb
+    [image.yaml](kogito-data-index-mongodb-overrides.yaml)
 
 
-Basic usage
+Basic usage with Infinispan:
 ```bash
-$ docker run -it --env QUARKUS_INFINISPAN_CLIENT_SERVER_LIST=my-infinispan-server:11222 quay.io/kiegroup/kogito-data-index:latest
+$ docker run -it --env QUARKUS_INFINISPAN_CLIENT_SERVER_LIST=my-infinispan-server:11222 quay.io/kiegroup/kogito-data-index-infinispan:latest
+```
+
+Basic usage with Mongodb:
+```bash
+$ docker run -it --env QUARKUS_MONGODB_CONNECTION_STRING=mongodb://localhost:27017 quay.io/kiegroup/kogito-data-index-mongodb:latest
 ```
 
 To enable debug just use this env while running this image:
 
 ```bash
-docker run -it --env SCRIPT_DEBUG=true --env QUARKUS_INFINISPAN_CLIENT_SERVER_LIST=my-infinispan-server:11222 quay.io/kiegroup/kogito-data-index:latest
+docker run -it --env SCRIPT_DEBUG=true --env QUARKUS_INFINISPAN_CLIENT_SERVER_LIST=my-infinispan-server:11222 quay.io/kiegroup/kogito-data-index-infinispan:latest
+```
+You should notice a few debug messages present in the system output.
+
+
+The [Kogito Operator](https://github.com/kiegroup/kogito-cloud-operator) can be used to deploy the Kogito Data Index Service 
+to your Kogito infrastructure on a Kubernetes cluster and provide its capabilities to your Kogito applications.
+
+### Kogito Explainability Component Image
+
+The Explainability Service aims to provide explainability on the decisions that have been taken by kogito runtime applications. 
+
+Basic usage
+```bash
+$ docker run -it quay.io/kiegroup/kogito-explainability:latest
+```
+
+To enable debug just use this env while running this image:
+
+```bash
+docker run -it --env SCRIPT_DEBUG=true quay.io/kiegroup/kogito-explainability:latest
 ```
 You should notice a few debug messages being printed in the system output.
 
-To know what configurations this image accepts please take a look [here](kogito-data-index-overrides.yaml) on the **envs** section.
+To know what configurations this image accepts please take a look [here](kogito-explainability-overrides.yaml) on the **envs** section.
 
-The [Kogito Operator](https://github.com/kiegroup/kogito-cloud-operator) can be used to deploy the Kogito Data Index Service 
+The [Kogito Operator](https://github.com/kiegroup/kogito-cloud-operator) can be used to deploy the Kogito Explainability Service 
+to your Kogito infrastructure on a Kubernetes cluster and provide its capabilities to your Kogito applications.
+
+### Kogito Trusty Component Image
+
+The Trusty Service aims at collecting tracing information by one or more Kogito runtime services and provides analytical capabilities on top of the collected data. 
+The Trusty Service depends on a running Infinispan Server.
+
+
+Basic usage
+```bash
+$ docker run -it -e QUARKUS_INFINISPAN_CLIENT_SERVER_LIST=my-infinispan-server:11222 -e KAFKA_BOOTSTRAP_SERVER=my-kafka:9092 quay.io/kiegroup/kogito-trusty:latest
+```
+
+To enable debug just use this env while running this image:
+
+```bash
+docker run -it --env SCRIPT_DEBUG=true --env QUARKUS_INFINISPAN_CLIENT_SERVER_LIST=my-infinispan-server:11222 quay.io/kiegroup/kogito-trusty:latest
+```
+You should notice a few debug messages being printed in the system output.
+
+To know what configurations this image accepts please take a look [here](kogito-trusty-overrides.yaml) on the **envs** section.
+
+The [Kogito Operator](https://github.com/kiegroup/kogito-cloud-operator) can be used to deploy the Kogito Trusty Service 
 to your Kogito infrastructure on a Kubernetes cluster and provide its capabilities to your Kogito applications.
 
 
@@ -649,6 +710,30 @@ To know what configurations this image accepts please take a look [here](kogito-
 The [Kogito Operator](https://github.com/kiegroup/kogito-cloud-operator) can be used to deploy the Kogito Management Console 
 to your Kogito infrastructure on a Kubernetes cluster and provide its capabilities to your Kogito applications.
 
+### Kogito Trusty UI Component Image
+
+The Kogito Trusty UI provides an audit tool that allows you to retrieve and inspect the decisions that have been taken by Kogito Runtime Services.
+It depends on the Kogito Trusty Service on which the Trusty UI will connect to so it can be able to retrieve the information to display.
+
+To work correctly, the Kogito Trusty UI needs the Kogito Trusty Service url. If not provided, it will try to connect to the default one (http://localhost:8180).
+
+Basic usage:
+
+```bash
+$ docker run -it --env KOGITO_TRUSTY_ENDPOINT=trusty-service-url:9090 quay.io/kiegroup/kogito-trusty-ui:latest
+```
+
+To enable debug just use this env while running this image:
+
+```bash
+docker run -it --env SCRIPT_DEBUG=true --env KOGITO_TRUSTY_ENDPOINT=trusty-service-url:9090 quay.io/kiegroup/kogito-trusty-ui:latest
+```
+You should notice a few debug messages being printed in the system output.
+
+To know what configurations this image accepts please take a look [here](kogito-trusty-ui-overrides.yaml) on the **envs** section.
+
+The [Kogito Operator](https://github.com/kiegroup/kogito-cloud-operator) can be used to deploy the Kogito Trusty UI 
+to your Kogito infrastructure on a Kubernetes cluster and provide its capabilities to your Kogito applications.
 
 ## Using Kogito Images to Deploy Apps on OpenShift
 
@@ -676,13 +761,15 @@ You can add applications to this project with the 'new-app' command. For example
 to build a new example application in Ruby.
 
 # installing the imagestream on the current namespace
-$ oc create -f https://raw.githubusercontent.com/kiegroup/kogito-images/0.9.0/kogito-imagestream.yaml
+$ oc create -f https://raw.githubusercontent.com/kiegroup/kogito-images/0.16.0/kogito-imagestream.yaml
 imagestream.image.openshift.io/kogito-quarkus-ubi8 created
 imagestream.image.openshift.io/kogito-quarkus-jvm-ubi8 created
 imagestream.image.openshift.io/kogito-quarkus-ubi8-s2i created
 imagestream.image.openshift.io/kogito-springboot-ubi8 created
 imagestream.image.openshift.io/kogito-springboot-ubi8-s2i created
-imagestream.image.openshift.io/kogito-data-index created
+imagestream.image.openshift.io/kogito-data-index-infinispan created
+imagestream.image.openshift.io/kogito-data-index-mongodb created
+imagestream.image.openshift.io/kogito-trusty created
 imagestream.image.openshift.io/kogito-jobs-service created
 imagestream.image.openshift.io/kogito-management-console created
 
@@ -863,25 +950,29 @@ With this Makefile you can:
  
 - Build images individually, by default it will build and test each image
      ```bash
-     $ make kogito-quarkus-ubi8
-     $ make kogito-quarkus-jvm-ubi8
-     $ make kogito-quarkus-ubi8-s2i
-     $ make kogito-springboot-ubi8 
-     $ make kogito-springboot-ubi8-s2i
-     $ make kogito-data-index
-     $ make kogito-jobs-service 
-     $ make kogito-management-console
+     $ make build-image image_name=kogito-quarkus-ubi8
+     $ make build-image image_name=kogito-quarkus-jvm-ubi8
+     $ make build-image image_name=kogito-quarkus-ubi8-s2i
+     $ make build-image image_name=kogito-springboot-ubi8 
+     $ make build-image image_name=kogito-springboot-ubi8-s2i
+     $ make build-image image_name=kogito-data-index-infinispan
+     $ make build-image image_name=kogito-data-index-mongodb
+     $ make build-image image_name=kogito-trusty
+     $ make build-image image_name=kogito-explainability
+     $ make build-image image_name=kogito-jobs-service 
+     $ make build-image image_name=kogito-management-console
+     $ make build-image image_name=kogito-trusty-ui
      ```
   
      We can ignore the build or the tests while interacting with a specific image as well, to build only:
      ```bash
-     $ make ignore_test=true {image_name}
+     $ make ignore_test=true image_name={image_name}
 
      ```
      
      Or to test only:
      ```bash
-     $ make ignore_build=true {image_name}
+     $ make ignore_build=true image_name={image_name}
      ```      
      
 - Build and Push the Images to quay or a repo for you preference, for this you need to edit the Makefile accordingly: 
@@ -893,9 +984,18 @@ With this Makefile you can:
         - X.Y.z
         - latest
         
+      to push a single image:
+      ```bash
+      $ make push-image image_name={image_name}
+      ```     
+        
 - Push staging images (release candidates, a.k.a rcX tags), the following command will build and push RC images to quay. 
       ```bash
       $ make push-staging
+      ```
+      To override an existing tag use:
+      ```bash
+      $ make push-staging override=-o
       ```
       It uses the [push-staging.py](scripts/push-staging.py) script to handle the images.
 
@@ -916,18 +1016,22 @@ To better understand the CeKit Modules, please visit this [link](https://docs.ce
 
 Below you can find all modules used to build the Kogito Images
 
-- [kogito-data-index](modules/kogito-data-index): Installs and Configure the data-index jar inside the image.
+- [kogito-data-index-common](modules/kogito-data-index-common): Data Index common module.
+- [kogito-data-index-infinispan](modules/kogito-data-index-infinispan): Installs and Configure the infinispan data-index jar inside the image.
+- [kogito-data-index-mongodb](modules/kogito-data-index-mongodb): Installs and Configure the mongodb data-index jar inside the image.
+- [kogito-trusty](modules/kogito-trusty): Installs and Configure the trusty jar inside the image.
+- [kogito-explainability](modules/kogito-explainability): Installs and Configure the explainability jar inside the image.
 - [kogito-epel](modules/kogito-epel): Configures the epel repository on the target image.
 - [kogito-graalvm-installer](modules/kogito-graalvm-installer): Installs the GraalVM on the target Image.
 - [kogito-graalvm-scripts](modules/kogito-graalvm-scripts): Configures the GraalVM on the target image and provides custom configuration script. 
 - [kogito-image-dependencies](modules/kogito-image-dependencies): Installs rpm packages on the target image. Contains common dependencies for Kogito Images.
-- [kogito-infinispan-properties](modules/kogito-infinispan-properties): Provides Infinispan custom script to configure Infinispan properties during image startup.
 - [kogito-jobs-service](modules/kogito-jobs-service): Installs and Configure the jobs-service jar inside the image
 - [kogito-jq](modules/kogito-jq): Provides jq binary.
 - [kogito-kubernetes-client](modules/kogito-kubernetes-client): Provides a simple wrapper to interact with Kubernetes API.
 - [kogito-launch-scripts](modules/kogito-launch-scripts): Main script for all images, it contains the startup script for Kogito Images
 - [kogito-logging](modules/kogito-logging): Provides common logging functions.
 - [kogito-management-console](modules/kogito-management-console): Installs and Configure the management-console jar inside the image
+- [kogito-trusty-ui](modules/kogito-trusty-ui): Installs and Configure the trusty-ui jar inside the image
 - [kogito-maven](modules/kogito-maven): Installs and configure Maven on the S2I images, also provides custom configuration script.
 - [kogito-openjdk](modules/kogito-openjdk): Provides OpenJDK and JRE.
 - [kogito-persistence](modules/kogito-persistence): Provides the needed configuration scripts to properly configure the Kogito Services in the target image.
@@ -940,11 +1044,15 @@ Below you can find all modules used to build the Kogito Images
 
 
 For each image, we use a specific *-overrides.yaml file which will specific the modules needed.
-Please inspect the images overrides files to learn which modules are being installed:
+Please inspect the images overrides files to learn which modules are installed on each image:
 
-- [quay.io/kiegroup/kogito-data-index](kogito-data-index-overrides.yaml)
+- [quay.io/kiegroup/kogito-data-index-infinispan](kogito-data-index-infinispan-overrides.yaml)
+- [quay.io/kiegroup/kogito-data-index-mongodb](kogito-data-index-mongodb-overrides.yaml)
+- [quay.io/kiegroup/kogito-trusty](kogito-trusty-overrides.yaml)
+- [quay.io/kiegroup/kogito-explainability](kogito-explainability-overrides.yaml)
 - [quay.io/kiegroup/kogito-jobs-service](kogito-jobs-service-overrides.yaml)
 - [quay.io/kiegroup/kogito-management-console](kogito-management-console-overrides.yaml)
+- [quay.io/kiegroup/kogito-trusty-ui](kogito-trusty-ui-overrides.yaml)
 - [quay.io/kiegroup/kogito-quarkus-jvm-ubi8](kogito-quarkus-jvm-overrides.yaml)
 - [quay.io/kiegroup/kogito-quarkus-ubi8](kogito-quarkus-overrides.yaml)
 - [quay.io/kiegroup/kogito-quarkus-ubi8-s2i](kogito-quarkus-s2i-overrides.yaml)
@@ -1038,8 +1146,8 @@ For example, if we are creating a new image called quay.io/kiegroup/kogito-moon-
 example:
 
 ```text
-@quay.io/kiegroup/kogito-data-index
-Feature: Kogito-data-index feature.
+@quay.io/kiegroup/kogito-data-index-infinispan
+Feature: Kogito-data-index-infinispan feature.
     ...
     Scenarios......
 ```

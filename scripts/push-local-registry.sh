@@ -3,9 +3,6 @@
 
 BUILD_ENGINE="docker"
 
-# All Kogito images
-IMAGES="kogito-quarkus-ubi8 kogito-quarkus-jvm-ubi8 kogito-quarkus-ubi8-s2i kogito-springboot-ubi8 kogito-springboot-ubi8-s2i kogito-data-index kogito-jobs-service kogito-management-console"
-
 registry=${REGISTRY:-{1}}
 version=${2:-latest}
 namespace=${3:-openshift}
@@ -24,10 +21,10 @@ fi
 
 echo "Images version ${version} will be pushed to registry ${registry}"
 
-for image in ${IMAGES}; do
+while read image; do
     echo "tagging image ${image} to ${registry}/${namespace}/${image}:${version}"
     ${BUILD_ENGINE} tag quay.io/kiegroup/${image}:${version} ${registry}/${namespace}/${image}:${version}
     echo "Deleting imagestream ${image} if exists `oc delete oc -n ${namespace} ${image}`"
     ${BUILD_ENGINE} push ${registry}/${namespace}/${image}:${version}
-done
+done <<<$(python3 scripts/list-images.py)
 

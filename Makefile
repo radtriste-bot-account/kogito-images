@@ -4,160 +4,62 @@ BUILD_ENGINE := docker
 .DEFAULT_GOAL := build
 CEKIT_CMD := cekit -v ${cekit_option}
 
-# Build all images
-.PHONY: build
-# start to build the images
-build: clone-repos kogito-quarkus-ubi8 kogito-quarkus-jvm-ubi8 kogito-quarkus-ubi8-s2i kogito-springboot-ubi8 kogito-springboot-ubi8-s2i kogito-data-index kogito-jobs-service kogito-management-console
-
 clone-repos:
 # if the NO_TEST env defined, proceed with the tests, as first step prepare the repo to be used
 ifneq ($(ignore_test),true)
 	cd tests/test-apps && sh clone-repo.sh
 endif
 
-# build the quay.io/kiegroup/kogito-quarkus-ubi8 image
-kogito-quarkus-ubi8:
+.PHONY: list
+list:
+	@python3 scripts/list-images.py
+
+# Build all images
+.PHONY: build
+# start to build the images
+build: clone-repos _build
+
+_build:
+	@for f in $(shell make list); do make build-image image_name=$${f}; done
+
+.PHONY: build-image
+image_name=
+build-image:
 ifneq ($(ignore_build),true)
-	${CEKIT_CMD} build --overrides-file kogito-quarkus-overrides.yaml ${BUILD_ENGINE}
+	${CEKIT_CMD} build --overrides-file ${image_name}-overrides.yaml ${BUILD_ENGINE}
 endif
-# if ignore_test is set tu true, ignore the tests
+# if ignore_test is set to true, ignore the tests
 ifneq ($(ignore_test),true)
-	${CEKIT_CMD} test --overrides-file kogito-quarkus-overrides.yaml behave
+	${CEKIT_CMD} test --overrides-file ${image_name}-overrides.yaml behave
 endif
 ifneq ($(findstring rc,$(IMAGE_VERSION)),rc)
-	${BUILD_ENGINE} tag quay.io/kiegroup/kogito-quarkus-ubi8:${IMAGE_VERSION} quay.io/kiegroup/kogito-quarkus-ubi8:${SHORTENED_LATEST_VERSION}
+	${BUILD_ENGINE} tag quay.io/kiegroup/${image_name}:${IMAGE_VERSION} quay.io/kiegroup/${image_name}:${SHORTENED_LATEST_VERSION}
 endif
-
-# build the quay.io/kiegroup/kogito-quarkus-jvm-ubi8 image
-kogito-quarkus-jvm-ubi8:
-ifneq ($(ignore_build),true)
-	${CEKIT_CMD} build --overrides-file kogito-quarkus-jvm-overrides.yaml ${BUILD_ENGINE}
-endif
-# if no NO_TEST env defined, test the image
-ifneq ($(ignore_test),true)
-	${CEKIT_CMD} test --overrides-file kogito-quarkus-jvm-overrides.yaml behave
-endif
-ifneq ($(findstring rc,$(IMAGE_VERSION)),rc)
-	${BUILD_ENGINE} tag quay.io/kiegroup/kogito-quarkus-jvm-ubi8:${IMAGE_VERSION} quay.io/kiegroup/kogito-quarkus-jvm-ubi8:${SHORTENED_LATEST_VERSION}
-endif
-
-# build the quay.io/kiegroup/kogito-quarkus-ubi8-s2i image
-kogito-quarkus-ubi8-s2i:
-ifneq ($(ignore_build),true)
-	${CEKIT_CMD} build --overrides-file kogito-quarkus-s2i-overrides.yaml ${BUILD_ENGINE}
-endif
-# if ignore_test is set tu true, ignore the tests
-ifneq ($(ignore_test),true)
-	${CEKIT_CMD} test --overrides-file kogito-quarkus-s2i-overrides.yaml behave
-endif
-ifneq ($(findstring rc,$(IMAGE_VERSION)),rc)
-	${BUILD_ENGINE} tag quay.io/kiegroup/kogito-quarkus-ubi8-s2i:${IMAGE_VERSION} quay.io/kiegroup/kogito-quarkus-ubi8-s2i:${SHORTENED_LATEST_VERSION}
-endif
-
-# build the quay.io/kiegroup/kogito-springboot-ubi8 image
-kogito-springboot-ubi8:
-ifneq ($(ignore_build),true)
-	${CEKIT_CMD} build --overrides-file kogito-springboot-overrides.yaml ${BUILD_ENGINE}
-endif
-# if ignore_test is set tu true, ignore the tests
-ifneq ($(ignore_test),true)
-	${CEKIT_CMD} test --overrides-file kogito-springboot-overrides.yaml behave
-endif
-ifneq ($(findstring rc,$(IMAGE_VERSION)),rc)
-	${BUILD_ENGINE} tag quay.io/kiegroup/kogito-springboot-ubi8:${IMAGE_VERSION} quay.io/kiegroup/kogito-springboot-ubi8:${SHORTENED_LATEST_VERSION}
-endif
-
-# build the quay.io/kiegroup/kogito-springboot-ubi8-s2i image
-kogito-springboot-ubi8-s2i:
-ifneq ($(ignore_build),true)
-	${CEKIT_CMD} build --overrides-file kogito-springboot-s2i-overrides.yaml ${BUILD_ENGINE}
-endif
-# if ignore_test is set tu true, ignore the tests
-ifneq ($(ignore_test),true)
-	${CEKIT_CMD} test --overrides-file kogito-springboot-s2i-overrides.yaml behave
-endif
-ifneq ($(findstring rc,$(IMAGE_VERSION)), rc)
-	${BUILD_ENGINE} tag quay.io/kiegroup/kogito-springboot-ubi8-s2i:${IMAGE_VERSION} quay.io/kiegroup/kogito-springboot-ubi8-s2i:${SHORTENED_LATEST_VERSION}
-endif
-
-# build the quay.io/kiegroup/kogito-data-index image
-kogito-data-index:
-ifneq ($(ignore_build),true)
-	${CEKIT_CMD} build --overrides-file kogito-data-index-overrides.yaml ${BUILD_ENGINE}
-endif
-# if ignore_test is set tu true, ignore the tests
-ifneq ($(ignore_test),true)
-	${CEKIT_CMD} test --overrides-file kogito-data-index-overrides.yaml behave
-endif
-ifneq ($(findstring rc,$(IMAGE_VERSION)), rc)
-	${BUILD_ENGINE} tag quay.io/kiegroup/kogito-data-index:${IMAGE_VERSION} quay.io/kiegroup/kogito-data-index:${SHORTENED_LATEST_VERSION}
-endif
-
-# build the quay.io/kiegroup/kogito-jobs-service image
-kogito-jobs-service:
-ifneq ($(ignore_build),true)
-	${CEKIT_CMD} build --overrides-file kogito-jobs-service-overrides.yaml ${BUILD_ENGINE}
-endif
-# if ignore_test is set tu true, ignore the tests
-ifneq ($(ignore_test),true)
-	${CEKIT_CMD} test --overrides-file kogito-jobs-service-overrides.yaml behave
-endif
-ifneq ($(findstring rc,$(IMAGE_VERSION)), rc)
-	${BUILD_ENGINE} tag quay.io/kiegroup/kogito-jobs-service:${IMAGE_VERSION} quay.io/kiegroup/kogito-jobs-service:${SHORTENED_LATEST_VERSION}
-endif
-
-# build the quay.io/kiegroup/kogito-management-console image
-kogito-management-console:
-ifneq ($(ignore_build),true)
-	${CEKIT_CMD} build --overrides-file kogito-management-console-overrides.yaml ${BUILD_ENGINE}
-endif
-# if ignore_test is set tu true, ignore the tests
-ifneq ($(ignore_test),true)
-	${CEKIT_CMD} test --overrides-file kogito-management-console-overrides.yaml behave
-endif
-ifneq ($(findstring rc,$(IMAGE_VERSION)), rc)
-	${BUILD_ENGINE} tag quay.io/kiegroup/kogito-management-console:${IMAGE_VERSION} quay.io/kiegroup/kogito-management-console:${SHORTENED_LATEST_VERSION}
-endif
-
 
 # push images to quay.io, this requires permissions under kiegroup organization
 .PHONY: push
 push: build _push
+
 _push:
-	docker push quay.io/kiegroup/kogito-quarkus-ubi8:${IMAGE_VERSION}
-	docker push quay.io/kiegroup/kogito-quarkus-ubi8:latest
-	docker push quay.io/kiegroup/kogito-quarkus-jvm-ubi8:${IMAGE_VERSION}
-	docker push quay.io/kiegroup/kogito-quarkus-jvm-ubi8:latest
-	docker push quay.io/kiegroup/kogito-quarkus-ubi8-s2i:${IMAGE_VERSION}
-	docker push quay.io/kiegroup/kogito-quarkus-ubi8-s2i:latest
-	docker push quay.io/kiegroup/kogito-springboot-ubi8:${IMAGE_VERSION}
-	docker push quay.io/kiegroup/kogito-springboot-ubi8:latest
-	docker push quay.io/kiegroup/kogito-springboot-ubi8-s2i:${IMAGE_VERSION}
-	docker push quay.io/kiegroup/kogito-springboot-ubi8-s2i:latest
-	docker push quay.io/kiegroup/kogito-data-index:${IMAGE_VERSION}
-	docker push quay.io/kiegroup/kogito-data-index:latest
-	docker push quay.io/kiegroup/kogito-jobs-service:${IMAGE_VERSION}
-	docker push quay.io/kiegroup/kogito-jobs-service:latest
-	docker push quay.io/kiegroup/kogito-management-console:${IMAGE_VERSION}
-	docker push quay.io/kiegroup/kogito-management-console:latest
+	@for f in $(shell make list); do make push-image image_name=$${f}; done
+
+.PHONY: push-image
+image_name=
+push-image:
+	docker push quay.io/kiegroup/${image_name}:${IMAGE_VERSION}
+	docker push quay.io/kiegroup/${image_name}:latest
 ifneq ($(findstring rc,$(IMAGE_VERSION)), rc)
 	@echo "${SHORTENED_LATEST_VERSION} will be pushed"
-	docker push quay.io/kiegroup/kogito-quarkus-ubi8:${SHORTENED_LATEST_VERSION}
-	docker push quay.io/kiegroup/kogito-quarkus-jvm-ubi8:${SHORTENED_LATEST_VERSION}
-	docker push quay.io/kiegroup/kogito-quarkus-ubi8-s2i:${SHORTENED_LATEST_VERSION}
-	docker push quay.io/kiegroup/kogito-springboot-ubi8:${SHORTENED_LATEST_VERSION}
-	docker push quay.io/kiegroup/kogito-springboot-ubi8-s2i:${SHORTENED_LATEST_VERSION}
-	docker push quay.io/kiegroup/kogito-data-index:${SHORTENED_LATEST_VERSION}
-	docker push quay.io/kiegroup/kogito-jobs-service:${SHORTENED_LATEST_VERSION}
-	docker push quay.io/kiegroup/kogito-management-console:${SHORTENED_LATEST_VERSION}
+	docker push quay.io/kiegroup/${image_name}:${SHORTENED_LATEST_VERSION}
 endif
 
 
 # push staging images to quay.io, done before release, this requires permissions under kiegroup organization
+# to force updating an existing tag instead create a new one, use `$ make push-staging override=-o`
 .PHONY: push-staging
 push-staging: build _push-staging
 _push-staging:
-	python3 scripts/push-staging.py
+	python3 scripts/push-staging.py ${override}
 
 
 # push to local registry, useful to push the built images to local registry
@@ -170,3 +72,7 @@ _push-staging:
 push-local-registry:
 	/bin/sh scripts/push-local-registry.sh ${REGISTRY} ${SHORTENED_LATEST_VERSION} ${NS}
 
+# run bat tests locally
+.PHONY: bats
+bats:
+	./scripts/run-bats.sh

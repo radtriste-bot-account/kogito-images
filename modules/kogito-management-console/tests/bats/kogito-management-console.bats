@@ -1,15 +1,15 @@
 #!/usr/bin/env bats
 
 export KOGITO_HOME=/tmp/kogito
-export HOME=$KOGITO_HOME
-mkdir -p ${KOGITO_HOME}/launch
-cp $BATS_TEST_DIRNAME/../../../kogito-logging/added/logging.sh ${KOGITO_HOME}/launch/
+export HOME="${KOGITO_HOME}"
+mkdir -p "${KOGITO_HOME}"/launch
+cp $BATS_TEST_DIRNAME/../../../kogito-logging/added/logging.sh "${KOGITO_HOME}"/launch/
 
 # imports
 load $BATS_TEST_DIRNAME/../../added/launch/kogito-management-console.sh
 
 teardown() {
-    rm -rf ${KOGITO_HOME}
+    rm -rf "${KOGITO_HOME}"
 }
 
 @test "test if the default value for data-index url will be set" {
@@ -31,28 +31,5 @@ teardown() {
     export KOGITO_DATAINDEX_HTTP_URL="a.b.c"
     run configure_data_index_url
     [ "${status}" == "10" ]
-}
-
-@test "check if default http port is correctly set" {
-
-  configure_mgmt_console_http_port
-
-  result="${KOGITO_MANAGEMENT_CONSOLE_PROPS}"
-  expected=" -Dquarkus.http.port=8080"
-
-  echo "Result is ${result} and expected is ${expected}"
-    [ "${result}" = "${expected}" ]
-}
-
-@test "check if custom http port is correctly set" {
-  export HTTP_PORT="9090"
-
-  configure_mgmt_console_http_port
-
-  result="${KOGITO_MANAGEMENT_CONSOLE_PROPS}"
-  expected=" -Dquarkus.http.port=9090"
-
-  echo "Result is ${result} and expected is ${expected}"
-    [ "${result}" = "${expected}" ]
 }
 
